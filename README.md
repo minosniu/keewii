@@ -18,3 +18,6 @@ Installation
 KeeWii can be included in your Leiningen project by adding:
 
     [keewii "0.1.0"]
+
+Usage
+=====

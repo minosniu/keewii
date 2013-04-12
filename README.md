@@ -1,20 +1,13 @@
-KeeWii
-======
+# local-keewii
 
-KeeWii is a real-time speech synthesizer leveraged by Overtone and Clojure. 
+A Clojure library designed to ... well, that part is up to you.
 
+## Usage
 
-Naming
-======
+FIXME
 
-The original name for KeeWii is MyoTalk, literally a speech synthesizer controlled by muscle activities. Coincidentally the Chinese transliteration of "MyoTalk" sounds very much like kiwi (猕猴桃). Imagine one does the following transformations in Clojure:
+## License
 
-    (tweak-until-unique-on-github (voice-to-english-text (text-to-chinese-speech "MyoTalk")))
-    
-You'll end up with the name "KeeWii".
+Copyright © 2013 FIXME
 
-Installation
-============
-KeeWii can be included in your Leiningen project by adding:
-
-    [keewii "0.1.0"]
+Distributed under the Eclipse Public License, the same as Clojure.

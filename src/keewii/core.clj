@@ -4,7 +4,7 @@
 
 ;;Definition
 ;server definition
-(def server (osc-server 44100 "Minos-KeeWii"))
+(def server (osc-server 44100 "Minos-KeeWii-thinkpad"))
 (zero-conf-on)
 ;(osc-listen server (fn [msg] (println msg)) :debug);listener connection
 ;(osc-rm-listener server :debug) ; remove listener

@@ -8,43 +8,43 @@
   [val]
   (if (= val 1.0) (doseq [] (speak (m1 @vowel))) 
     (doseq[]
-      (osc-handle server "/1/fader1" (fn [msg] (println msg)(silent-alter-vowel-f1 vowel (first (:args msg)))))
-      (osc-handle server "/1/fader2" (fn [msg] (println msg)(silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
+      (osc-handle server "/1/fader1" (fn [msg] (silent-alter-vowel-f1 vowel (first (:args msg)))))
+      (osc-handle server "/1/fader2" (fn [msg] (silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
     ))
 (defn enable-w
   [val]
   (if (= val 1.0) (doseq [] (speak (w1 @vowel))) 
     (doseq[]
-      (osc-handle server "/1/fader1" (fn [msg] (println msg)(silent-alter-vowel-f1 vowel (first (:args msg)))))
-      (osc-handle server "/1/fader2" (fn [msg] (println msg)(silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
+      (osc-handle server "/1/fader1" (fn [msg] (silent-alter-vowel-f1 vowel (first (:args msg)))))
+      (osc-handle server "/1/fader2" (fn [msg] (silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
     ))
 (defn enable-y
   [val]
   (if (= val 1.0) (doseq [] (speak (y1 @vowel))) 
     (doseq[]
-      (osc-handle server "/1/fader1" (fn [msg] (println msg)(silent-alter-vowel-f1 vowel (first (:args msg)))))
-      (osc-handle server "/1/fader2" (fn [msg] (println msg)(silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
+      (osc-handle server "/1/fader1" (fn [msg] (silent-alter-vowel-f1 vowel (first (:args msg)))))
+      (osc-handle server "/1/fader2" (fn [msg] (silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
     ))
 (defn enable-b
   [val]
   (if (= val 1.0) (doseq [] (speak (b1 @vowel))) 
     (doseq[]
-      (osc-handle server "/1/fader1" (fn [msg] (println msg)(silent-alter-vowel-f1 vowel (first (:args msg)))))
-      (osc-handle server "/1/fader2" (fn [msg] (println msg)(silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
+      (osc-handle server "/1/fader1" (fn [msg] (silent-alter-vowel-f1 vowel (first (:args msg)))))
+      (osc-handle server "/1/fader2" (fn [msg] (silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
     ))
 (defn enable-l
   [val]
   (if (= val 1.0) (doseq [] (speak (l1 @vowel))) 
     (doseq[]
-      (osc-handle server "/1/fader1" (fn [msg] (println msg)(silent-alter-vowel-f1 vowel (first (:args msg)))))
-      (osc-handle server "/1/fader2" (fn [msg] (println msg)(silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
+      (osc-handle server "/1/fader1" (fn [msg] (silent-alter-vowel-f1 vowel (first (:args msg)))))
+      (osc-handle server "/1/fader2" (fn [msg] (silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
     ))
 (defn enable-d
   [val]
   (if (= val 1.0) (doseq [] (speak (d1 @vowel))) 
     (doseq[]
-      (osc-handle server "/1/fader1" (fn [msg] (println msg)(silent-alter-vowel-f1 vowel (first (:args msg)))))
-      (osc-handle server "/1/fader2" (fn [msg] (println msg)(silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
+      (osc-handle server "/1/fader1" (fn [msg] (silent-alter-vowel-f1 vowel (first (:args msg)))))
+      (osc-handle server "/1/fader2" (fn [msg] (silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
     )) 
 
 (defn vowel-xy

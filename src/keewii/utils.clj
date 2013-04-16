@@ -1,9 +1,10 @@
 (ns keewii.utils
-  (:use [keewii.server]
+  (:use [keewii.server] 
         [keewii.formant]
         [keewii.sequence]
         [overtone.live]))
-
+(def vowel (ref {:t 100 :fa 750.0 :fb 1000.0 :fc 2600.0 :vol 1.0}))
+ 
 (defn make-vowel [vowel]
   (doseq[] (f1 (vowel :fa))(f2 (vowel :fb))(f3 (vowel :fc))))
 

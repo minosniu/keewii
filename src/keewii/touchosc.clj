@@ -57,7 +57,8 @@
     (doseq [] 
       (ctl fa :freq newfreq_a)
       (ctl fb :freq newfreq_b)
-      (println newfreq_a newfreq_b))))
+      ;(println newfreq_a newfreq_b))
+    ))  
 
 (defn enable-play ; play basic f1,f2,f3
   [val]

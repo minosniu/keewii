@@ -1,12 +1,12 @@
 (ns keewii.touchosc
   (:use [overtone.live]
+        [keewii.server]
         [keewii.formant]
         [keewii.utils]
         [keewii.sequence]))
-
 (defn enable-m
   [val]
-  (if (= val 1.0) (doseq [] (speak (m1 @vowel))) 
+  (if (= val 1.0) (doseq [] (speak (m1 @vowel)))
     (doseq[]
       (osc-handle server "/1/fader1" (fn [msg] (silent-alter-vowel-f1 vowel (first (:args msg)))))
       (osc-handle server "/1/fader2" (fn [msg] (silent-alter-vowel-f2 vowel (first (:args msg)))))(stop))
@@ -57,8 +57,8 @@
     (doseq [] 
       (ctl fa :freq newfreq_a)
       (ctl fb :freq newfreq_b)
-      ;(println newfreq_a newfreq_b))
-    ))  
+      ;(println newfreq_a newfreq_b)
+      )))
 
 (defn enable-play ; play basic f1,f2,f3
   [val]

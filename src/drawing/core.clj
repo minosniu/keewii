@@ -1,4 +1,4 @@
-(ns drawing.ants
+(ns drawing.core
   (:require [clojure.data.json :as json]
             [clojure.string :as string])
   (:use [lamina.core ] 
@@ -6,10 +6,10 @@
         [gloss.core]
         [aleph.udp])
   (:import (java.net DatagramPacket DatagramSocket InetAddress)
-           (java.awt Color Graphics Dimension)
+           (java.awt Color Graphics Dimension GridLayout Font FontMetrics)
            (java.awt.image BufferedImage)
-           (javax.swing JPanel JFrame)))
-
+           (javax.swing JPanel JFrame JLabel JTextField)))
+;UDP + Java swing 
 
 (defn receive-data [receive-socket]
   "Packet parsing"
@@ -25,49 +25,39 @@
 (def x (ref 0)) 
 (def y (ref 0))
 
-;canvas
-(def dim 80)
+;canvas size
+(def dim [900 600]) ;frequency domain: 200-800,500-2300
 (def animation-sleep-ms 16)
 (def running true)
-;world is a 2d vector of refs to cells
-(defstruct cell :food :pher)
-(def world
-  (mapv (fn [_]
-          (mapv (fn [_] (ref (struct cell 0 0)))
-                (range dim)))
-        (range dim)))
-(defn place [[x y]]
-  (-> world (nth x) (nth y)))
-
-;pixels per world cell
-(def scale 5)
-
-(defn fill-cell [^Graphics g x y c]
-  (doto g
-    (.setColor c)
-    (.fillRect (* x scale) (* y scale) scale scale)))
+(def ^{:private true} font (new Font "Georgia" Font/PLAIN 44))
 
 (defn render [^Graphics g]
-  (let [v (dosync (vec (for [x (range dim) y (range dim)]
-                         @(place [x y]))))
-        img (BufferedImage. (* scale dim) (* scale dim)
-                            BufferedImage/TYPE_INT_ARGB)
+  (let [img (BufferedImage. (first dim) (last dim) BufferedImage/TYPE_INT_ARGB)
         bg (.getGraphics img)]
     (doto bg
       (.setColor Color/WHITE) ;background
-      (.fillRect 0 0 (.getWidth img) (.getHeight img)))
+      (.fillRect 0 0 (.getWidth img) (.getHeight img)))    
     (doto bg
       (.setColor Color/BLUE) ;blue square
-      (.fillRect (* 20 (deref x)) (* 20 (deref y)) 20 20)
-         )
+      (.fillRect (* 20 (deref x)) (* 20 (deref y)) 20 20));movement speed and size of block
+    (doto bg
+      (. setFont font)
+      (.setColor Color/BLACK)
+      ; x: 900-(f2-500)/2=1150-f2/2, y: f1-200
+      (.drawString "a" 650 560);f2 f1 pair
+      (.drawString "e" 250 360)
+      (.drawString "i" 20 80)
+      (.drawString "o" 780 180)
+      (.drawString "u" 810 80)
+      )
     (.drawImage g img 0 0 nil)
     (.dispose bg)))
 
 (def ^JPanel panel (doto (proxy [JPanel] []
                            (paint [g] (render g)))
-                     (.setPreferredSize (Dimension.
-                                         (* scale dim)
-                                         (* scale dim)))))
+                     (.setPreferredSize (Dimension. 
+                                         (first dim)
+                                         (last dim)))))
 
 (def frame (doto (JFrame.) (.add panel) .pack .show))
 (def animator (agent nil))
@@ -75,15 +65,13 @@
   (when running
     (send-off *agent* #'animation))
   (.repaint panel)
-  (Thread/sleep animation-sleep-ms)
-  nil)
+  (Thread/sleep animation-sleep-ms) nil)
+
 (defn animation [x] 
   (when running
     (send-off *agent* #'animation)
      (.repaint panel)
-     (Thread/sleep animation-sleep-ms)
-    )
- )
+     (Thread/sleep animation-sleep-ms)))
 
 (send-off animator animation)
 

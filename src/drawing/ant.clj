@@ -1,10 +1,13 @@
 (ns drawing.ants
-  (:require [clojure.data.json :as json])
-  (:use [lamina.core] 
+  (:require [clojure.data.json :as json]
+            [clojure.string :as string])
+  (:use [lamina.core ] 
         [aleph.tcp]
         [gloss.core]
         [aleph.udp])
   (:import (java.net DatagramPacket DatagramSocket InetAddress))
+
+
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ant sim ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,7 +64,7 @@
    (Integer. (re-find  #"\d+" s )))
 "UDP"
 (defn make-socket 
-  ([] (new DatagramSocket))
+	([] (new DatagramSocket))
 	([port] (new DatagramSocket port)))
 
 (defn send-data [send-socket ip port data]
@@ -370,13 +373,8 @@
   (when running
     (send-off *agent* #'animation))
   (.repaint panel)
-  (println @MSG)
- (if (nil? (receive-msg)) 
-   (println "no msg")
-
-  )
+  (println (receive-msg))
   ;(Thread/sleep animation-sleep-ms)
-
   nil)
 
 ;(def evaporator (agent nil))
@@ -392,19 +390,28 @@
 
 ;(load-file "/Users/rich/dev/clojure/ants.clj")
 (def ants (setup))
+(send-off animator animation)
 
 (loop []
-  (send-off animator animation)
-    (dosync (ref-set MSG (receive-msg))
-    (ref-set x (first (json/read-json @MSG)))
-    (ref-set y (second (json/read-json @MSG)))
+  
+  ;(map read-string (string/split (receive-msg) #" "))  
+  (dosync (let [msg (map read-string (string/split (receive-msg) #" "))]
+      
+    (ref-set x (first msg))
+    (ref-set y (second msg))
+    (spit "test.txt" (str msg "\n") :append true)
+    )
+
     ;(ref-set vowel (last (json/read-json @MSG))) ;character sent from C++
     )
+
+  ;(slurp "blubber.txt") ;read file
+
     ;add reaching task here, show another sound
     (Thread/sleep animation-sleep-ms)
    (recur)
    )
-  
+   ;example 
 ;(dorun (map #(send-off % behave) ants))
 ;(send-off evaporator evaporation)
 

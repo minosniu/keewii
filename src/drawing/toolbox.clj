@@ -1,7 +1,5 @@
 (ns drawing.toolbox
-  (:require [clojure.string :as string])
-  ;(:use [overtone.at-at])
-  )
+  (:require [clojure.string :as string]))
 (import 'java.util.Date)
 (import java.text.SimpleDateFormat)
 
@@ -22,4 +20,9 @@
    (let [reader (java.io.BufferedReader. *in*)
          ln (.readLine reader)] ln))
  
+ (defn formant2pixel [VOWEL ind]
+  "resize the number of formants to fit into the screen"
+  (if (= ind 1)
+    (- (VOWEL :f1) 200)
+    (- 1150 (/ (VOWEL :f2) 2))))
  

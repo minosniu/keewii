@@ -25,6 +25,7 @@
 ;filename info
 (defonce NAME (get-name))
 (defonce DATE (get-date))
+(def FILENAME (str "data\\" NAME DATE))
 (def session_number (atom 0))
 
 ;canvas size
@@ -33,11 +34,6 @@
 (def running true)
 (def ^{:private true} font (new Font "Georgia" Font/PLAIN 44))
 
-(defn formant2pixel [VOWEL ind]
-  "resize the number of formants to fit into the screen"
-  (if (= ind 1)
-    (- (VOWEL :f1) 200)
-    (- 1150 (/ (VOWEL :f2) 2))))
 (defn render [^Graphics g]
   (let [img (BufferedImage. (first dim) (last dim) BufferedImage/TYPE_INT_ARGB)
         bg (.getGraphics img)
@@ -85,7 +81,7 @@
     (let [time  (/ (- (now) @TIME) 1000.0) ;in ms
           MSG (receive-msg)
           msg (map read-string (string/split MSG #":"))
-          filename (str "data\\" NAME DATE @session_number ".txt")
+          filename (str FILENAME @session_number ".txt");(str "data\\" NAME DATE @session_number ".txt")
           VOWEL (:name @alphabet)
           VOWEL-f1 (:f1 @alphabet)
           VOWEL-f2 (:f1 @alphabet)]
@@ -110,15 +106,20 @@
 (def between-trial 2000) ;in ms
 (def total-trials 20)
 
+;(. (Runtime/getRuntime) exec C:\sox-14-4-1\rec -c 2 C:\Users\KangWoo Lee\workspace\keewii\data\dd.wav 0 5)
 (dotimes [i total-trials]
   (dosync 
+    (let [recording-info (str "cmd /c c:\\sox-14-4-1\\rec.exe -c 2 \"C:\\Users\\KangWoo Lee\\workspace\\keewii\\" FILENAME @session_number ".wav\" trim 0 5")]
     (reset! TIME (now))
+    (println recording-info)
+    (. (Runtime/getRuntime) exec recording-info)
     (. (Runtime/getRuntime) exec "notepad.exe")
+    ;(. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")
     (reset! alphabet (rand-nth [A E I O U]))
     (reset! session_number (+ 1 @session_number))
     (. Thread (sleep trial-duration))
     (. (Runtime/getRuntime) exec "taskkill /F /IM notepad.exe")
-    (. Thread (sleep between-trial))))
+    (. Thread (sleep between-trial)))))
 (System/exit 0)
 
 ;(recording-start "awesome.wav") ;overtone lib

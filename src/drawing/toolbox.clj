@@ -1,5 +1,10 @@
 (ns drawing.toolbox
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            ;[overtone.live :as live]
+            )
+  ;(:use ;[clojure.contrib.math])
+      
+  )
 (import 'java.util.Date)
 (import java.text.SimpleDateFormat)
 
@@ -20,9 +25,10 @@
    (let [reader (java.io.BufferedReader. *in*)
          ln (.readLine reader)] ln))
  
- (defn formant2pixel [VOWEL ind]
-  "resize the number of formants to fit into the screen"
+ (defn formant2pixel [VOWEL Scale-factor ind]
+  "resize the number of formants to fit into the screen by scale factor from the screen size"
   (if (= ind 1)
-    (- (VOWEL :f1) 200)
-    (- 1150 (/ (VOWEL :f2) 2))))
+    (int (/ (* Scale-factor (- (VOWEL :f1)  200))  600))
+    (int (/ (* Scale-factor (- 2300 (VOWEL :f2))) 1800))))
+
  

@@ -13,6 +13,7 @@
   (:import (java.awt Color Graphics Dimension GridLayout Font FontMetrics)
            (java.awt.image BufferedImage)
            (javax.swing JPanel JFrame JLabel JTextField)
+           (java.awt.event ActionListener KeyListener) ;for key input
            (java.lang.Runtime)))
 
 ;log data in logfile
@@ -27,25 +28,42 @@
 (defonce DATE (get-date))
 (def FILENAME (str "data\\" NAME DATE))
 (def session_number (atom 0))
+(def PAUSE (atom false))
 
 ;canvas size
+(def #^{:private true} frame)
 (def dim [900 600]) ;frequency domain: 200-800,500-2300
 (def animation-sleep-ms 16)
-(def running true)
+(def running (atom true))
 (def ^{:private true} font (new Font "Georgia" Font/PLAIN 44))
+(def SCREEN-SIZE (atom [0 0]))
+
+(defn input-listener []
+    (proxy [ActionListener KeyListener] []
+      (actionPerformed [e])
+      (keyPressed [e] (if (= (str (.getKeyChar e)) "p") 
+                        (doseq [] (println "status changed to " @running) (swap! running not)))) ;pause
+  (keyReleased [e])
+  (keyTyped [e])))
 
 (defn render [^Graphics g]
-  (let [img (BufferedImage. (first dim) (last dim) BufferedImage/TYPE_INT_ARGB)
+  (let [WIDTH (.getWidth frame) ;1382 in my laptop
+        HEIGHT (.getHeight frame) ;744 in my laptop
+        img (BufferedImage. WIDTH HEIGHT BufferedImage/TYPE_INT_ARGB)
+        ;img (BufferedImage. (first dim) (last dim) BufferedImage/TYPE_INT_ARGB)
         bg (.getGraphics img)
-        y (- @F1 200) 
-        x (- 1150 (/ @F2 2))
+        y (/ (* HEIGHT (- @F1 200)) 600)
+        x (/ (* WIDTH (- 2300 @F2)) 1800)
+        ;y (+ (- @F1 200) (/ (- HEIGHT 600) 2)) 
+        ;x (+ (- 1150 (/ @F2 2)) (/ (- WIDTH 900) 2) )
         VOWEL  @alphabet
-        x_pos (formant2pixel VOWEL 2)
-        y_pos (formant2pixel VOWEL 1)
+        x_pos (formant2pixel VOWEL WIDTH 2)
+        y_pos (formant2pixel VOWEL HEIGHT 1)
         CHAR (VOWEL :name)]
+    ;(println x_pos y_pos)
     (doto bg
       (.setColor Color/WHITE) ;background
-      (.fillRect 0 0 (.getWidth img) (.getHeight img)))    
+      (.fillRect 0 0 (.getWidth img)  (.getHeight img)))    
     (doto bg
       (.setColor Color/BLUE) ;blue square
       (.fillRect (int (- x 10) )  (int (- y 10) )  20 20));
@@ -53,9 +71,11 @@
       (. setFont font)
       (.setColor Color/BLACK)
       ; x: 900-(f2-500)/2=1150-f2/2, y: f1-200
-      (.drawString CHAR x_pos y_pos ))
+      (.drawString CHAR x_pos y_pos))
     (.drawImage g img 0 0 nil)
-    (.dispose bg)))
+    ;(doto bg (. setExtendedState JFrame/MAXIMIZED_BOTH))
+    (.dispose bg)
+    ))
 
 (def ^JPanel panel (doto (proxy [JPanel] []
                            (paint [g] (render g)))
@@ -63,15 +83,20 @@
                                          (first dim)
                                          (last dim)))))
 
-(def frame (doto (JFrame.) (.add panel) .pack .show (. setAlwaysOnTop true) (. setExtendedState JFrame/MAXIMIZED_BOTH)))
+(def frame 
+  (doto (JFrame.) 
+    (.add panel) .pack .show (. setAlwaysOnTop true) (. toFront)
+    (. setExtendedState JFrame/MAXIMIZED_BOTH) ;(. setVisible true)
+    (.addKeyListener (input-listener))
+    ))
 
 ;printing thread
 (def animator (agent nil))
 (defn animation [x]
-  (when running
-    (send-off *agent* #'animation))
+  (when 1
+    (send-off *agent* #'animation)
   (.repaint panel)
-  (Thread/sleep animation-sleep-ms) nil)
+  (Thread/sleep animation-sleep-ms) nil))
 (send-off animator animation)
 
 ;receving thread
@@ -95,7 +120,7 @@
       
 (defn udp-reception [x]       
   (udp-receive)
-  (when running
+  (when @running
     (send-off *agent* #'udp-reception))
   nil)
 (send-off udp-receiver udp-reception)
@@ -106,20 +131,28 @@
 (def between-trial 2000) ;in ms
 (def total-trials 20)
 
+
 ;(. (Runtime/getRuntime) exec C:\sox-14-4-1\rec -c 2 C:\Users\KangWoo Lee\workspace\keewii\data\dd.wav 0 5)
-(dotimes [i total-trials]
-  (dosync 
-    (let [recording-info (str "cmd /c c:\\sox-14-4-1\\rec.exe -c 2 \"C:\\Users\\KangWoo Lee\\workspace\\keewii\\" FILENAME @session_number ".wav\" trim 0 5")]
-    (reset! TIME (now))
-    (println recording-info)
-    (. (Runtime/getRuntime) exec recording-info)
-    (. (Runtime/getRuntime) exec "notepad.exe")
-    ;(. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")
-    (reset! alphabet (rand-nth [A E I O U]))
-    (reset! session_number (+ 1 @session_number))
-    (. Thread (sleep trial-duration))
-    (. (Runtime/getRuntime) exec "taskkill /F /IM notepad.exe")
-    (. Thread (sleep between-trial)))))
+(loop [i total-trials]
+  (let [run (if @running 1 0)]
+  (when @running 
+    (dosync 
+      (let [recording-info (str "cmd /c c:\\sox-14-4-1\\rec.exe -c 2 \"C:\\Users\\KangWoo Lee\\workspace\\keewii\\" FILENAME @session_number ".wav\" trim 0 5")]
+     
+      (reset! TIME (now))
+      ;(println recording-info)
+      (. (Runtime/getRuntime) exec recording-info)
+      (. (Runtime/getRuntime) exec "notepad.exe")
+      ;(. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")
+      (reset! alphabet (rand-nth [A E I O U]))
+      (reset! session_number (+ 1 @session_number))
+      (. Thread (sleep trial-duration))
+      (. (Runtime/getRuntime) exec "taskkill /F /IM notepad.exe")
+      ;(. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
+      (. Thread (sleep between-trial))
+
+    )))
+  (recur (- i run))))
 (System/exit 0)
 
 ;(recording-start "awesome.wav") ;overtone lib

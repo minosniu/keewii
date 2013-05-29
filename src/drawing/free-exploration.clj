@@ -13,6 +13,7 @@
   (:import (java.awt Color Graphics Dimension GridLayout Font FontMetrics)
            (java.awt.image BufferedImage)
            (javax.swing JPanel JFrame JLabel JTextField)
+           (java.awt.event ActionListener KeyListener) ;for key input
            (java.lang.Runtime)))
 
 ;log data in logfile
@@ -25,34 +26,46 @@
 ;filename info
 (defonce NAME (get-name))
 (defonce DATE (get-date))
-(def session_number (atom 0))
+(def FILENAME (str "data\\" NAME DATE))
+(def PAUSE (atom false))
 
 ;canvas size
+(def #^{:private true} frame)
 (def dim [900 600]) ;frequency domain: 200-800,500-2300
 (def animation-sleep-ms 16)
-(def running true)
+(def running (atom true))
 (def ^{:private true} font (new Font "Georgia" Font/PLAIN 44))
+(def SCREEN-SIZE (atom [0 0]))
+
+(defn input-listener []
+    (proxy [ActionListener KeyListener] []
+      (actionPerformed [e])
+      (keyPressed [e] (if (= (str (.getKeyChar e)) "p") 
+                        (doseq [] (println "status changed to " @running) (swap! running not)))) ;pause
+  (keyReleased [e])
+  (keyTyped [e])))
 
 (defn render [^Graphics g]
-  (let [img (BufferedImage. (first dim) (last dim) BufferedImage/TYPE_INT_ARGB)
+  (let [WIDTH (.getWidth frame) ;1382 in my laptop
+        HEIGHT (.getHeight frame) ;744 in my laptop
+        img (BufferedImage. WIDTH HEIGHT BufferedImage/TYPE_INT_ARGB)
         bg (.getGraphics img)
-        y (- @F1 200) 
-        x (- 1150 (/ @F2 2))]
+        y (/ (* HEIGHT (- @F1 200)) 600)
+        x (/ (* WIDTH (- 2300 @F2)) 1800)]
     (doto bg
       (.setColor Color/WHITE) ;background
-      (.fillRect 0 0 (.getWidth img) (.getHeight img)))    
+      (.fillRect 0 0 (.getWidth img)  (.getHeight img)))    
     (doto bg
       (.setColor Color/BLUE) ;blue square
       (.fillRect (int (- x 10) )  (int (- y 10) )  20 20));
     (doto bg
       (. setFont font)
       (.setColor Color/BLACK)
-      ; x: 900-(f2-500)/2=1150-f2/2, y: f1-200
-      (.drawString "a" 650 560);f2 f1 pair
-      (.drawString "e" 250 360)
-      (.drawString "i" 20 80)
-      (.drawString "o" 780 180)
-      (.drawString "u" 810 80))
+       (.drawString "a" (formant2pixel A WIDTH 2) (formant2pixel A HEIGHT 1));f2 f1 pair
+      (.drawString "e" (formant2pixel E WIDTH 2) (formant2pixel E HEIGHT 1))
+      (.drawString "i" (formant2pixel I WIDTH 2) (formant2pixel I HEIGHT 1))
+      (.drawString "o" (formant2pixel O WIDTH 2) (formant2pixel O HEIGHT 1))
+      (.drawString "u" (formant2pixel U WIDTH 2) (formant2pixel U HEIGHT 1)))
     (.drawImage g img 0 0 nil)
     (.dispose bg)))
 
@@ -62,15 +75,19 @@
                                          (first dim)
                                          (last dim)))))
 
-(def frame (doto (JFrame.) (.add panel) .pack .show (. setAlwaysOnTop true) (. setExtendedState JFrame/MAXIMIZED_BOTH)))
+(def frame 
+  (doto (JFrame.) 
+    (.add panel) .pack .show (. setAlwaysOnTop true) (. toFront)
+    (. setExtendedState JFrame/MAXIMIZED_BOTH)
+    (.addKeyListener (input-listener))))
 
 ;printing thread
 (def animator (agent nil))
 (defn animation [x]
-  (when running
-    (send-off *agent* #'animation))
+  (when 1
+    (send-off *agent* #'animation)
   (.repaint panel)
-  (Thread/sleep animation-sleep-ms) nil)
+  (Thread/sleep animation-sleep-ms) nil))
 (send-off animator animation)
 
 ;receving thread
@@ -80,7 +97,10 @@
     (let [time  (/ (- (now) @TIME) 1000.0) ;in ms
           MSG (receive-msg)
           msg (map read-string (string/split MSG #":"))
-          filename (str "data\\" NAME DATE @session_number ".txt")]
+          filename (str FILENAME ".txt")
+          VOWEL (:name @alphabet)
+          VOWEL-f1 (:f1 @alphabet)
+          VOWEL-f2 (:f1 @alphabet)]
       (println MSG)
       (reset! F1 (first msg))
       (reset! F2 (second msg))
@@ -91,20 +111,20 @@
       
 (defn udp-reception [x]       
   (udp-receive)
-  (when running
+  (when @running
     (send-off *agent* #'udp-reception))
   nil)
 (send-off udp-receiver udp-reception)
 
 (. Thread (sleep 5000));Starting pause
-(def trial-duration 20000) ; in ms
+(def trial-duration 30000) ; in ms
 
 (dosync 
   (reset! TIME (now))
   (. (Runtime/getRuntime) exec "notepad.exe")
+  ;(. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")
   (. Thread (sleep trial-duration))
-  (. (Runtime/getRuntime) exec "taskkill /F /IM notepad.exe"))
+  ;(. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
+  (. (Runtime/getRuntime) exec "taskkill /F /IM notepad.exe")
+  )
 (System/exit 0)
-
-;(recording-start "awesome.wav") ;overtone lib
-;(recording-stop)

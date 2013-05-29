@@ -54,41 +54,36 @@
         bg (.getGraphics img)
         y (/ (* HEIGHT (- @F1 200)) 600)
         x (/ (* WIDTH (- 2300 @F2)) 1800)
-        ;y (+ (- @F1 200) (/ (- HEIGHT 600) 2)) 
-        ;x (+ (- 1150 (/ @F2 2)) (/ (- WIDTH 900) 2) )
         VOWEL  @alphabet
         x_pos (formant2pixel VOWEL WIDTH 2)
         y_pos (formant2pixel VOWEL HEIGHT 1)
         CHAR (VOWEL :name)]
-    ;(println x_pos y_pos)
     (doto bg
       (.setColor Color/WHITE) ;background
-      (.fillRect 0 0 (.getWidth img)  (.getHeight img)))    
+      (.fillRect 0 0 (.getWidth img)  (.getHeight img)))
+    (doto bg
+      (.setColor Color/yellow)
+      (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y))
     (doto bg
       (.setColor Color/BLUE) ;blue square
       (.fillRect (int (- x 10) )  (int (- y 10) )  20 20));
     (doto bg
       (. setFont font)
       (.setColor Color/BLACK)
-      ; x: 900-(f2-500)/2=1150-f2/2, y: f1-200
       (.drawString CHAR x_pos y_pos))
     (.drawImage g img 0 0 nil)
-    ;(doto bg (. setExtendedState JFrame/MAXIMIZED_BOTH))
-    (.dispose bg)
-    ))
+    (.dispose bg)))
 
 (def ^JPanel panel (doto (proxy [JPanel] []
                            (paint [g] (render g)))
                      (.setPreferredSize (Dimension. 
                                          (first dim)
                                          (last dim)))))
-
 (def frame 
   (doto (JFrame.) 
     (.add panel) .pack .show (. setAlwaysOnTop true) (. toFront)
-    (. setExtendedState JFrame/MAXIMIZED_BOTH) ;(. setVisible true)
-    (.addKeyListener (input-listener))
-    ))
+    (. setExtendedState JFrame/MAXIMIZED_BOTH) 
+    (.addKeyListener (input-listener))))
 
 ;printing thread
 (def animator (agent nil))
@@ -131,8 +126,6 @@
 (def between-trial 2000) ;in ms
 (def total-trials 20)
 
-
-;(. (Runtime/getRuntime) exec C:\sox-14-4-1\rec -c 2 C:\Users\KangWoo Lee\workspace\keewii\data\dd.wav 0 5)
 (loop [i total-trials]
   (let [run (if @running 1 0)]
   (when @running 
@@ -140,7 +133,6 @@
       (let [recording-info (str "cmd /c c:\\sox-14-4-1\\rec.exe -c 2 \"C:\\Users\\KangWoo Lee\\workspace\\keewii\\" FILENAME @session_number ".wav\" trim 0 5")]
      
       (reset! TIME (now))
-      ;(println recording-info)
       (. (Runtime/getRuntime) exec recording-info)
       (. (Runtime/getRuntime) exec "notepad.exe")
       ;(. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")
@@ -149,11 +141,6 @@
       (. Thread (sleep trial-duration))
       (. (Runtime/getRuntime) exec "taskkill /F /IM notepad.exe")
       ;(. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
-      (. Thread (sleep between-trial))
-
-    )))
+      (. Thread (sleep between-trial)))))
   (recur (- i run))))
 (System/exit 0)
-
-;(recording-start "awesome.wav") ;overtone lib
-;(recording-stop)

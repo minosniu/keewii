@@ -1,12 +1,13 @@
 (ns drawing.core
   (:require [clojure.data.json :as json]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [overtone.live :as live])
   (:use [lamina.core] 
         [aleph.tcp]
         [gloss.core]
         [aleph.udp]
         [drawing.toolbox]
-        [drawing.struct-vowel]
+        [drawing.struct_vowel]
         [overtone.at-at]
         [clojure.contrib.math]
         [drawing.udp])
@@ -20,15 +21,21 @@
 (def TIME (atom (now)))
 (def F1 (atom 210)) 
 (def F2 (atom 510))
+(def F3 (atom 2890)) 
 (def EMG1 (atom 0.0))
 (def EMG2 (atom 0.0))
 
 ;filename info
 (defonce NAME (get-name))
 (defonce DATE (get-date))
-(def FILENAME (str "data\\" NAME DATE))
+(def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE))
 (def session_number (atom 0))
 (def PAUSE (atom false))
+
+;overtone formants
+(live/definst f1 [freq 450.0 BW 50.0 Amp 6.0] (* Amp (live/bpf (live/saw 100) freq (/ BW freq))))
+(live/definst f2 [freq 1450.0 BW 70.0 Amp 5.6] (* Amp (live/bpf (live/saw 100) freq (/ BW freq))))
+(live/definst f3 [freq 2450.0 BW 110.0 Amp 5.2] (* Amp (live/bpf (live/saw 100) freq (/ BW freq))))
 
 ;canvas size
 (def #^{:private true} frame)
@@ -36,7 +43,6 @@
 (def animation-sleep-ms 16)
 (def running (atom true))
 (def ^{:private true} font (new Font "Georgia" Font/PLAIN 44))
-(def SCREEN-SIZE (atom [0 0]))
 
 (defn input-listener []
     (proxy [ActionListener KeyListener] []
@@ -52,8 +58,8 @@
         img (BufferedImage. WIDTH HEIGHT BufferedImage/TYPE_INT_ARGB)
         ;img (BufferedImage. (first dim) (last dim) BufferedImage/TYPE_INT_ARGB)
         bg (.getGraphics img)
-        y (/ (* HEIGHT (- @F1 200)) 600)
-        x (/ (* WIDTH (- 2300 @F2)) 1800)
+        y (/ (* HEIGHT (- @F1 0)) 1000) ;200, 600
+        x (/ (* WIDTH (- 3000 @F2)) 3000) ;2300, 1800
         VOWEL  @alphabet
         x_pos (formant2pixel VOWEL WIDTH 2)
         y_pos (formant2pixel VOWEL HEIGHT 1)
@@ -62,7 +68,7 @@
       (.setColor Color/WHITE) ;background
       (.fillRect 0 0 (.getWidth img)  (.getHeight img)))
     (doto bg
-      (.setColor Color/yellow)
+      (.setColor Color/GREEN)
       (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y))
     (doto bg
       (.setColor Color/BLUE) ;blue square
@@ -81,17 +87,17 @@
                                          (last dim)))))
 (def frame 
   (doto (JFrame.) 
-    (.add panel) .pack .show (. setAlwaysOnTop true) (. toFront)
+    (.add panel) .pack .show (. setAlwaysOnTop true) 
     (. setExtendedState JFrame/MAXIMIZED_BOTH) 
     (.addKeyListener (input-listener))))
 
 ;printing thread
 (def animator (agent nil))
 (defn animation [x]
-  (when 1
-    (send-off *agent* #'animation)
+  (when @running
+    (send-off *agent* #'animation))
   (.repaint panel)
-  (Thread/sleep animation-sleep-ms) nil))
+  (Thread/sleep animation-sleep-ms) nil)
 (send-off animator animation)
 
 ;receving thread
@@ -109,14 +115,15 @@
       (reset! F1 (first msg))
       (reset! F2 (second msg))
       (reset! EMG1 (second (rest msg)))
-      (reset! EMG2 (last msg))         
+      (reset! EMG2 (last msg))   
+(doseq [] (live/ctl f1 :freq (first msg)) (live/ctl f2 :freq (second msg)))      
   (if (and (and (>= @F1 100) (<= @F1 900 )) (and (>= @F2 300 ) (<= @F2 2500 )) )
-        (spit filename (str time " " @EMG1 " " @EMG2 " " @F1 " " @F2 "\n")  :append true))))); vowel-showed cursor-f1 cursor-f2
+        (spit filename (str time " " @EMG1 " " @EMG2 " " @F1 " " @F2 "\n")  :append true))
+  ))); vowel-showed cursor-f1 cursor-f2
       
 (defn udp-reception [x]       
   (udp-receive)
-  (when @running
-    (send-off *agent* #'udp-reception))
+  (send-off *agent* #'udp-reception)
   nil)
 (send-off udp-receiver udp-reception)
 
@@ -126,21 +133,27 @@
 (def between-trial 2000) ;in ms
 (def total-trials 20)
 
+
+
 (loop [i total-trials]
+  (when (> i 0) 
   (let [run (if @running 1 0)]
   (when @running 
-    (dosync 
-      (let [recording-info (str "cmd /c c:\\sox-14-4-1\\rec.exe -c 2 \"C:\\Users\\KangWoo Lee\\workspace\\keewii\\" FILENAME @session_number ".wav\" trim 0 5")]
-     
-      (reset! TIME (now))
-      (. (Runtime/getRuntime) exec recording-info)
-      (. (Runtime/getRuntime) exec "notepad.exe")
-      ;(. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")
-      (reset! alphabet (rand-nth [A E I O U]))
-      (reset! session_number (+ 1 @session_number))
-      (. Thread (sleep trial-duration))
-      (. (Runtime/getRuntime) exec "taskkill /F /IM notepad.exe")
-      ;(. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
-      (. Thread (sleep between-trial)))))
-  (recur (- i run))))
+    
+      (let [recording-info (str "cmd /c c:\\sox-14-4-1\\rec.exe -c 2 " FILENAME @session_number ".wav trim 0 5")]
+        
+        (reset! TIME (now))
+        (doseq [] (f1 @F1)(f2 @F2)(f3 @F3) ) 
+        (live/recording-start (str FILENAME @session_number ".wav"))
+        ;(. (Runtime/getRuntime) exec recording-info)
+        ;(. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")
+        (reset! alphabet (rand-nth [A E I O U]))
+        (reset! session_number (+ 1 @session_number))
+        (. Thread (sleep trial-duration))
+        (live/recording-stop)
+        (live/stop) 
+        ;(. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
+        (. Thread (sleep between-trial))))
+  (recur (- i run))
+  )))
 (System/exit 0)

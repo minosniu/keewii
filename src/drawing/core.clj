@@ -1,13 +1,15 @@
 (ns drawing.core
   (:require [clojure.data.json :as json]
             [clojure.string :as string]
-            [overtone.live :as live])
+            [overtone.live :as live]
+            )
   (:use [lamina.core] 
         [aleph.tcp]
         [gloss.core]
         [aleph.udp]
         [drawing.toolbox]
         [drawing.struct_vowel]
+        [drawing.experiment_options] 
         [overtone.at-at]
         [clojure.contrib.math]
         [drawing.udp])
@@ -26,6 +28,7 @@
 (def EMG2 (atom 0.0))
 
 ;filename info
+(OPTIONS)
 (defonce NAME (get-name))
 (defonce DATE (get-date))
 (def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE))
@@ -33,9 +36,9 @@
 (def PAUSE (atom false))
 
 ;overtone formants
-(live/definst f1 [freq 450.0 BW 50.0 Amp 6.0] (* Amp (live/bpf (live/saw 100) freq (/ BW freq))))
-(live/definst f2 [freq 1450.0 BW 70.0 Amp 5.6] (* Amp (live/bpf (live/saw 100) freq (/ BW freq))))
-(live/definst f3 [freq 2450.0 BW 110.0 Amp 5.2] (* Amp (live/bpf (live/saw 100) freq (/ BW freq))))
+;(live/definst f1 [freq 450.0 BW 50.0 Amp 6.0] (* Amp (live/bpf (live/saw 120) freq (/ BW freq))))
+;(live/definst f2 [freq 1450.0 BW 70.0 Amp 5.6] (* Amp (live/bpf (live/saw 120) freq (/ BW freq))))
+;(live/definst f3 [freq 2450.0 BW 110.0 Amp 5.2] (* Amp (live/bpf (live/saw 120) freq (/ BW freq))))
 
 ;canvas size
 (def #^{:private true} frame)
@@ -67,16 +70,25 @@
     (doto bg
       (.setColor Color/WHITE) ;background
       (.fillRect 0 0 (.getWidth img)  (.getHeight img)))
-    (doto bg
-      (.setColor Color/GREEN)
-      (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y))
-    (doto bg
-      (.setColor Color/BLUE) ;blue square
-      (.fillRect (int (- x 10) )  (int (- y 10) )  20 20));
-    (doto bg
-      (. setFont font)
-      (.setColor Color/BLACK)
-      (.drawString CHAR x_pos y_pos))
+    
+    (when @CUR ;draw cursor only when CURSOR = true
+      (doseq []  
+        (doto bg
+          (.setColor Color/GREEN)
+          (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y))
+        (doto bg
+          (.setColor Color/BLUE) ;blue square
+          (.fillRect (int (- x 10) )  (int (- y 10) )  20 20)))) 
+    (if @TGT 
+      (doto bg
+        (. setFont font)
+        (.setColor Color/BLACK)
+        (.drawString CHAR x_pos y_pos))
+      (doto bg
+        (.setFont font)
+        (.setColor Color/BLACK)
+        (.drawString CHAR 500 1500))) 
+    
     (.drawImage g img 0 0 nil)
     (.dispose bg)))
 
@@ -111,14 +123,14 @@
           VOWEL (:name @alphabet)
           VOWEL-f1 (:f1 @alphabet)
           VOWEL-f2 (:f1 @alphabet)]
-      (println MSG)
+      ;(println MSG)
       (reset! F1 (first msg))
       (reset! F2 (second msg))
       (reset! EMG1 (second (rest msg)))
       (reset! EMG2 (last msg))   
-(doseq [] (live/ctl f1 :freq (first msg)) (live/ctl f2 :freq (second msg)))      
+;(doseq [] (live/ctl f1 :freq (first msg)) (live/ctl f2 :freq (second msg)))      
   (if (and (and (>= @F1 100) (<= @F1 900 )) (and (>= @F2 300 ) (<= @F2 2500 )) )
-        (spit filename (str time " " @EMG1 " " @EMG2 " " @F1 " " @F2 "\n")  :append true))
+        (spit filename (str time " " @EMG1 " " @EMG2 " " @F1 " " @F2  "\n")  :append true))
   ))); vowel-showed cursor-f1 cursor-f2
       
 (defn udp-reception [x]       
@@ -133,27 +145,29 @@
 (def between-trial 2000) ;in ms
 (def total-trials 20)
 
-
+(def randomized-sequence (shuffle (reduce into (map #(repeat 4 %) [A E I O U])))) 
 
 (loop [i total-trials]
   (when (> i 0) 
   (let [run (if @running 1 0)]
   (when @running 
-    
       (let [recording-info (str "cmd /c c:\\sox-14-4-1\\rec.exe -c 2 " FILENAME @session_number ".wav trim 0 5")]
         
         (reset! TIME (now))
-        (doseq [] (f1 @F1)(f2 @F2)(f3 @F3) ) 
-        (live/recording-start (str FILENAME @session_number ".wav"))
-        ;(. (Runtime/getRuntime) exec recording-info)
-        ;(. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")
-        (reset! alphabet (rand-nth [A E I O U]))
+        ;(doseq [] (f1 @F1)(f2 @F2)(f3 @F3) ) 
+        ;(live/recording-start (str FILENAME @session_number "temp.wav"))
+        (. (Runtime/getRuntime) exec recording-info)
+        (. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")      
+        (reset! alphabet (randomized-sequence (- i 1))) 
+        (spit (str FILENAME "_seq.txt") (str ((randomized-sequence (- i 1)) :name) " ") :append true) 
+        (spit (str FILENAME @session_number ".txt") (str ((randomized-sequence (- i 1)) :name) "\n") :append true )  
         (reset! session_number (+ 1 @session_number))
         (. Thread (sleep trial-duration))
-        (live/recording-stop)
-        (live/stop) 
-        ;(. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
+        ;(live/recording-stop)
+        ;(live/stop) 
+        (. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
         (. Thread (sleep between-trial))))
   (recur (- i run))
   )))
+
 (System/exit 0)

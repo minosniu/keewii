@@ -157,8 +157,7 @@
 
 
 (def randomized-sequence (shuffle (reduce into (map #(repeat 5 %) [A E I O U])))) 
-;(spit (str FILENAME "seq.txt") (map #(randomized-sequence :name)))
-(spit (str FILENAME "seq.txt") randomized-sequence )
+(spit (str FILENAME "seq.txt") (string/join " " (reduce str (map #(% :name) randomized-sequence))))
 
 (doseq [i (range  (- @start-trial 1) total-trials)]
   (reset! session_number  (inc i)) 

@@ -32,6 +32,7 @@
 (defonce NAME (get-name))
 (defonce DATE (get-date))
 (def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE))
+(def Temp_data "C:\\Code\\keewii1\\temp\\") 
 (def session_number (atom 0))
 (def PAUSE (atom false))
 
@@ -143,9 +144,9 @@
 
 (def trial-duration 5000) ; in ms
 (def between-trial 2000) ;in ms
-(def total-trials 20)
+(def total-trials 25)
 
-(def randomized-sequence (shuffle (reduce into (map #(repeat 4 %) [A E I O U])))) 
+(def randomized-sequence (shuffle (reduce into (map #(repeat 5 %) [A E I O U])))) 
 
 (loop [i total-trials]
   (when (> i 0) 
@@ -160,7 +161,7 @@
         (. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")      
         (reset! alphabet (randomized-sequence (- i 1))) 
         (spit (str FILENAME "_seq.txt") (str ((randomized-sequence (- i 1)) :name) " ") :append true) 
-        (spit (str FILENAME @session_number ".txt") (str ((randomized-sequence (- i 1)) :name) "\n") :append true )  
+        (spit (str FILENAME @session_number ".txt") (str "\n" ((randomized-sequence (- i 1)) :name) "\n") :append true )  
         (reset! session_number (+ 1 @session_number))
         (. Thread (sleep trial-duration))
         ;(live/recording-stop)

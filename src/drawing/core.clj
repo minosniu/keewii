@@ -1,8 +1,7 @@
 (ns drawing.core
   (:require [clojure.data.json :as json]
             [clojure.string :as string]
-            [clojure.java.io :as io]
-            )
+            [clojure.java.io :as io])
   (:use [lamina.core] 
         [aleph.tcp]
         [gloss.core]
@@ -27,31 +26,25 @@
 (def EMG1 (atom 0.0))
 (def EMG2 (atom 0.0))
 
-;file functions
-(defn copy-file [source-path dest-path]
-  (io/copy (io/file source-path) (io/file dest-path)))
-(defn mkdir [path]
-  (.mkdirs (io/file path)))
-(defn parse-int [s]
-   (Integer. (re-find  #"\d+" s )))
-
 ;filename info
 (OPTIONS)
+(while @options)
 (def Condition (atom (str (if @CUR "C" "") (if @TGT "T" "")))) 
-(defonce NAME (get-name))
 (defonce DATE (get-date))
-(def start-trial (atom 1))
-(reset! start-trial (parse-int (get-name)) ) 
+;(defonce NAME (get-name))
+;(reset! start-trial (parse-int (get-name)) ) 
 
 (def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE "\\" @Condition "\\"))
 (def Temp_data "C:\\Code\\keewii1\\temp\\") 
 (def session_number (atom 0))
 (def PAUSE (atom false))
-(mkdir FILENAME) 
+(mkdir FILENAME)
+(mkdir (str FILENAME "\\dat\\"))
+(mkdir (str FILENAME "\\wav\\"))
 
 ;canvas size
 (def #^{:private true} frame)
-(def dim [900 600]) ;frequency domain: 200-800,500-2300
+(def dim [1050 700]) ;frequency domain: 200-900,500-2600
 (def animation-sleep-ms 16)
 (def running (atom true))
 (def ^{:private true} font (new Font "Georgia" Font/PLAIN 44))
@@ -70,8 +63,8 @@
         img (BufferedImage. WIDTH HEIGHT BufferedImage/TYPE_INT_ARGB)
         ;img (BufferedImage. (first dim) (last dim) BufferedImage/TYPE_INT_ARGB)
         bg (.getGraphics img)
-        y (/ (* HEIGHT (- @F1 0)) 1000) ;200, 600
-        x (/ (* WIDTH (- 3000 @F2)) 3000) ;2300, 1800
+        y (/ (* HEIGHT (- @F1 0)) 1000) ;polar coordinate
+        x (/ (* WIDTH (- 3000 @F2)) 3000) ;polar coordinate
         VOWEL  @alphabet
         x_pos (formant2pixel VOWEL WIDTH 2)
         y_pos (formant2pixel VOWEL HEIGHT 1)
@@ -82,9 +75,9 @@
     
     (when @CUR ;draw cursor only when CURSOR = true
       (doseq []  
-        (doto bg
-          (.setColor Color/GREEN)
-          (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y))
+;        (doto bg
+;          (.setColor Color/GREEN)
+;          (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y))/only for polar coordinate
         (doto bg
           (.setColor Color/BLUE) ;blue square
           (.fillRect (int (- x 10) )  (int (- y 10) )  20 20)))) 
@@ -139,7 +132,7 @@
       (reset! EMG1 (second (rest msg)))
       (reset! EMG2 (last msg))   
 ;(doseq [] (live/ctl f1 :freq (first msg)) (live/ctl f2 :freq (second msg)))      
-  (if (and (and (>= @F1 100) (<= @F1 900 )) (and (>= @F2 300 ) (<= @F2 2500 )) )
+  (if (and (and (>= @F1 100) (<= @F1 900 )) (and (>= @F2 300 ) (<= @F2 2500 )) (and (>= time 0.0 ) (<= time 5.0 )) )
           (spit temp_folder (str time " " @EMG1 " " @EMG2 " " @F1 " " @F2  "\n")  :append true) )
   ))); vowel-showed cursor-f1 cursor-f2
       
@@ -175,7 +168,7 @@
     (. Thread (sleep trial-duration))
     (. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
     (. Thread (sleep between-trial))
-    (copy-file (str Temp_data (format "%02d" @session_number) ".wav") (str FILENAME (format "%02d" @session_number) ".wav"))
-    (copy-file (str Temp_data (format "%02d" @session_number) ".txt") (str FILENAME (format "%02d" @session_number) ".dat"))
+    (copy-file (str Temp_data "\\wav\\" (format "%02d" @session_number) ".wav") (str FILENAME (format "%02d" @session_number) ".wav"))
+    (copy-file (str Temp_data "\\dat\\"(format "%02d" @session_number) ".txt") (str FILENAME (format "%02d" @session_number) ".dat"))
     ))
 (System/exit 0)

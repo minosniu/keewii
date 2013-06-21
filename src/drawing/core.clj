@@ -31,8 +31,6 @@
 (while @options)
 (def Condition (atom (str (if @CUR "C" "") (if @TGT "T" "")))) 
 (defonce DATE (get-date))
-;(defonce NAME (get-name))
-;(reset! start-trial (parse-int (get-name)) ) 
 
 (def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE "\\" @Condition "\\"))
 (def Temp_data "C:\\Code\\keewii1\\temp\\") 
@@ -168,7 +166,7 @@
     (. Thread (sleep trial-duration))
     (. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
     (. Thread (sleep between-trial))
-    (copy-file (str Temp_data "\\wav\\" (format "%02d" @session_number) ".wav") (str FILENAME (format "%02d" @session_number) ".wav"))
-    (copy-file (str Temp_data "\\dat\\"(format "%02d" @session_number) ".txt") (str FILENAME (format "%02d" @session_number) ".dat"))
+    (copy-file (str Temp_data (format "%02d" @session_number) ".wav") (str FILENAME "\\wav\\" (format "%02d" @session_number) ".wav"))
+    (copy-file (str Temp_data (format "%02d" @session_number) ".txt") (str FILENAME "\\dat\\" (format "%02d" @session_number) ".dat"))
     ))
 (System/exit 0)

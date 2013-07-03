@@ -17,6 +17,7 @@
            (javax.swing JPanel JFrame JLabel JTextField)
            (java.awt.event ActionListener KeyListener) ;for key input
            (java.lang.Runtime)))
+(import '(java.io File)) 
 
 ;log data in logfile
 (def TIME (atom (now)))
@@ -32,14 +33,27 @@
 (def Condition (atom (str (if @CUR "C" "") (if @TGT "T" "")))) 
 (defonce DATE (get-date))
 
-(def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE "\\" @Condition "\\"))
+;(def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE "\\" @Condition "\\"))
+(def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME "\\" @Condition "\\"))
 (def Temp_data "C:\\Code\\keewii1\\temp\\") 
 (def session_number (atom 0))
 (def PAUSE (atom false))
+(def CUR_TGT_sleep (atom true)) ;It hides cursor and target during interval
 (mkdir FILENAME)
 (mkdir (str FILENAME "\\dat\\"))
 (mkdir (str FILENAME "\\wav\\"))
-
+(defn seq_check [filename]
+  "This function checks if seq.txt exists" 
+  (let [f (File. filename)]
+    (cond
+      (.isFile f)      (def randomized-sequence 
+                         (into [] (map #(matcher %) (string/split (slurp (str FILENAME "seq.txt")) #"\s+"))) );"file"
+      (.isDirectory f) "directory"
+      (.exists f)      "other"
+      :else            (doseq [] (def randomized-sequence  ;non existent case
+                                   (shuffle (reduce into (map #(repeat 5 %) [A E I O U])))) 
+                         (spit (str FILENAME "seq.txt") 
+                               (string/join " " (reduce str (map #(% :name) randomized-sequence))))))))
 ;canvas size
 (def #^{:private true} frame)
 (def dim [1050 700]) ;frequency domain: 200-900,500-2600
@@ -71,7 +85,7 @@
       (.setColor Color/WHITE) ;background
       (.fillRect 0 0 (.getWidth img)  (.getHeight img)))
     
-    (when @CUR ;draw cursor only when CURSOR = true
+    (when (and @CUR @CUR_TGT_sleep) ;draw cursor only when CURSOR = true
       (doseq []  
 ;        (doto bg
 ;          (.setColor Color/GREEN)
@@ -79,15 +93,26 @@
         (doto bg
           (.setColor Color/BLUE) ;blue square
           (.fillRect (int (- x 10) )  (int (- y 10) )  20 20)))) 
-    (if @TGT 
-      (doto bg
-        (. setFont font)
-        (.setColor Color/BLACK)
-        (.drawString CHAR x_pos y_pos))
+    ;(if @TGT (println "true") (println "false")) 
+    (if @CUR_TGT_sleep
+      (if @TGT  
+        (doto bg
+          (. setFont font)
+          (.setColor Color/BLACK)
+          (.drawString CHAR x_pos y_pos))
+        (doto bg
+          (.setFont font)
+          (.setColor Color/BLACK)
+          (.drawString CHAR 
+             (int (/ (* WIDTH 1500) 3000))
+            (int (/ (* HEIGHT 500)  1000)))))
       (doto bg
         (.setFont font)
         (.setColor Color/BLACK)
-        (.drawString CHAR 500 1500))) 
+        (.drawString "Relax" 
+          (int (/ (* WIDTH 1500) 3000))
+          (int (/ (* HEIGHT 500)  1000))))
+      ) 
     
     (.drawImage g img 0 0 nil)
     (.dispose bg)))
@@ -106,7 +131,7 @@
 ;printing thread
 (def animator (agent nil))
 (defn animation [x]
-  (when @running
+  (when true;@running
     (send-off *agent* #'animation))
   (.repaint panel)
   (Thread/sleep animation-sleep-ms) nil)
@@ -146,16 +171,14 @@
 (def between-trial 2000) ;in ms
 (def total-trials 25)
 
-
-(def randomized-sequence (shuffle (reduce into (map #(repeat 5 %) [A E I O U])))) 
-(spit (str FILENAME "seq.txt") (string/join " " (reduce str (map #(% :name) randomized-sequence))))
+(seq_check (str FILENAME "seq.txt")) ;If exists, we will use pre-defined sequence
 
 (doseq [i (range  (- @start-trial 1) total-trials)]
   (reset! session_number  (inc i)) 
   (while (not @running)) 
   (let [recording-info (str "cmd /c c:\\sox-14-4-1\\rec.exe -c 2 " Temp_data (format "%02d" @session_number) ".wav trim 0 5")]
     ;recording-info (str "cmd /c c:\\sox-14-4-1\\rec.exe -c 2 " FILENAME @session_number ".wav trim 0 5")]
-    
+    (reset! CUR_TGT_sleep true)
     (reset! TIME (now))
     (. (Runtime/getRuntime) exec recording-info)
     
@@ -165,6 +188,7 @@
     (spit (str Temp_data (format "%02d" @session_number) ".txt") (str "\n" ((randomized-sequence i) :name) "\n") :append true )  
     (. Thread (sleep trial-duration))
     (. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe")
+    (reset! CUR_TGT_sleep false) 
     (. Thread (sleep between-trial))
     (copy-file (str Temp_data (format "%02d" @session_number) ".wav") (str FILENAME "\\wav\\" (format "%02d" @session_number) ".wav"))
     (copy-file (str Temp_data (format "%02d" @session_number) ".txt") (str FILENAME "\\dat\\" (format "%02d" @session_number) ".dat"))

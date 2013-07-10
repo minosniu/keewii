@@ -19,6 +19,9 @@
            (java.lang.Runtime)))
 (import '(java.io File)) 
 
+;MACRO!!
+(def POLAR_COORDINATES true) 
+
 ;log data in logfile
 (def TIME (atom (now)))
 (def F1 (atom 210)) 
@@ -30,7 +33,7 @@
 ;filename info
 (OPTIONS)
 (while @options)
-(def Condition (atom (str (if @CUR "C" "") (if @TGT "T" "")))) 
+(def Condition (atom (str (if @CUR "C" "") (if @TGT "T" "") (if (not (or @CUR @TGT)) "none")))) 
 (defonce DATE (get-date))
 
 ;(def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE "\\" @Condition "\\"))
@@ -59,7 +62,7 @@
 (def dim [1050 700]) ;frequency domain: 200-900,500-2600
 (def animation-sleep-ms 16)
 (def running (atom true))
-(def ^{:private true} font (new Font "Georgia" Font/PLAIN 44))
+(def ^{:private true} font (new Font "Georgia" Font/PLAIN 100))
 
 (defn input-listener []
     (proxy [ActionListener KeyListener] []
@@ -87,9 +90,10 @@
     
     (when (and @CUR @CUR_TGT_sleep) ;draw cursor only when CURSOR = true
       (doseq []  
-;        (doto bg
-;          (.setColor Color/GREEN)
-;          (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y))/only for polar coordinate
+        (if POLAR_COORDINATES
+          (doto bg
+          (.setColor Color/GREEN)
+          (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y)));only for polar coordinate
         (doto bg
           (.setColor Color/BLUE) ;blue square
           (.fillRect (int (- x 10) )  (int (- y 10) )  20 20)))) 
@@ -110,7 +114,7 @@
         (.setFont font)
         (.setColor Color/BLACK)
         (.drawString "Relax" 
-          (int (/ (* WIDTH 1500) 3000))
+          (int (/ (* WIDTH 1700) 3000))
           (int (/ (* HEIGHT 500)  1000))))
       ) 
     

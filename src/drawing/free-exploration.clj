@@ -53,10 +53,8 @@
         HEIGHT (.getHeight frame) ;744 in my laptop
         img (BufferedImage. WIDTH HEIGHT BufferedImage/TYPE_INT_ARGB)
         bg (.getGraphics img)
-        y (/ (* HEIGHT (- @F1 0)) 1000) ;cartesian coordinate
-        x (/ (* WIDTH (- 3000 @F2)) 3000) ;cartesian coordinate
-        ;y (/ (* HEIGHT (- 1000 @F1)) 1000) ;cartesian coordinate
-        ;x (/ (* WIDTH (- @F2 0)) 3000) ;cartesian coordinate       
+        y (/ (* HEIGHT (- @F1 (formant_lim 0))) (- (formant_lim 1) (formant_lim 0))) ;cartesian coordinate
+        x (/ (* WIDTH (- (formant_lim 3) @F2)) (- (formant_lim 3) (formant_lim 2))) ;cartesian coordinate
         ]
     (doto bg
       (.setColor Color/WHITE) ;background
@@ -131,7 +129,7 @@
 (send-off udp-receiver udp-reception)
 
 (. Thread (sleep 5000));Starting pause
-(def trial-duration 120000) ; in ms
+(def trial-duration 600000) ; in ms
 
 (dosync 
   (reset! TIME (now))

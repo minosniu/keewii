@@ -7,7 +7,7 @@
 (def I (struct vowel "i" 290 2350));280/2250
 (def O (struct vowel "o" 440 650)) ;370/730
 (def U (struct vowel "u" 220 500));290/680
-(def S (struct vowel "Test will start soon" 500 1700))
+(def S (struct vowel "Test will \nstart soon" 500 1900))
 ;(:ind vowel)
 (def alphabet (atom S))
 

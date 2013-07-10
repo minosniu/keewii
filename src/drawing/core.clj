@@ -20,7 +20,7 @@
 (import '(java.io File)) 
 
 ;MACRO!!
-(def POLAR_COORDINATES true) 
+;(def POLAR_COORDINATES true) 
 
 ;log data in logfile
 (def TIME (atom (now)))
@@ -33,7 +33,8 @@
 ;filename info
 (OPTIONS)
 (while @options)
-(def Condition (atom (str (if @CUR "C" "") (if @TGT "T" "") (if (not (or @CUR @TGT)) "none")))) 
+;(def Condition (atom (str (if @CUR "C" "") (if @TGT "T" "") (if (not (or @CUR @TGT)) "none")))) ;Cur+Tgtoptions
+(def Condition (atom (if @POLAR_COORDINATES "Polar" "Cart"))) 
 (defonce DATE (get-date))
 
 ;(def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE "\\" @Condition "\\"))
@@ -78,8 +79,10 @@
         img (BufferedImage. WIDTH HEIGHT BufferedImage/TYPE_INT_ARGB)
         ;img (BufferedImage. (first dim) (last dim) BufferedImage/TYPE_INT_ARGB)
         bg (.getGraphics img)
-        y (/ (* HEIGHT (- @F1 0)) 1000) ;polar coordinate
-        x (/ (* WIDTH (- 3000 @F2)) 3000) ;polar coordinate
+        ;y (/ (* HEIGHT (- @F1 0)) 1000) ;polar coordinate
+        ;x (/ (* WIDTH (- 3000 @F2)) 3000) ;polar coordinate
+        y (/ (* HEIGHT (- @F1 (formant_lim 0))) (- (formant_lim 1) (formant_lim 0))) ;cartesian coordinate
+        x (/ (* WIDTH (- (formant_lim 3) @F2)) (- (formant_lim 3) (formant_lim 2))) ;cartesian coordinate
         VOWEL  @alphabet
         x_pos (formant2pixel VOWEL WIDTH 2)
         y_pos (formant2pixel VOWEL HEIGHT 1)
@@ -90,10 +93,10 @@
     
     (when (and @CUR @CUR_TGT_sleep) ;draw cursor only when CURSOR = true
       (doseq []  
-        (if POLAR_COORDINATES
+        (if @POLAR_COORDINATES
           (doto bg
-          (.setColor Color/GREEN)
-          (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y)));only for polar coordinate
+            (.setColor Color/GREEN)
+            (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y)));only for polar coordinate
         (doto bg
           (.setColor Color/BLUE) ;blue square
           (.fillRect (int (- x 10) )  (int (- y 10) )  20 20)))) 
@@ -114,7 +117,7 @@
         (.setFont font)
         (.setColor Color/BLACK)
         (.drawString "Relax" 
-          (int (/ (* WIDTH 1700) 3000))
+          (int (/ (* WIDTH  (- 3000 1700)) 3000));1700 = actual position
           (int (/ (* HEIGHT 500)  1000))))
       ) 
     

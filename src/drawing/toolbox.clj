@@ -1,12 +1,12 @@
 (ns drawing.toolbox
+  (:use  [drawing.basic_vars]) 
   (:require [clojure.string :as string]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [drawing.struct_vowel :as struct_vowel])
+  (:import (java.awt.event ActionListener KeyListener)
+           (java.util Date)
+           (java.text SimpleDateFormat)))
 
-(import 'java.util.Date)
-(import java.text.SimpleDateFormat)
-
-;Formant limitation
-(def formant_lim [200 900 500 2600]);f1_min f1_max f2_min f2_max 
 ;Date
  (defn date
     ([](Date.))
@@ -26,10 +26,14 @@
  
  (defn formant2pixel [VOWEL Scale-factor ind]
   "resize the number of formants to fit into the screen by scale factor from the screen size"
-  (if (= ind 1)
-    ;move 25pixels with font 100
-    (int (+ (/ (* Scale-factor (- (VOWEL :f1)  (formant_lim 0)))  (- (formant_lim 1) (formant_lim 0))) 25)) ;200 600 ->0 1000 (0~1000), 
-    (int (- (/ (* Scale-factor (- (formant_lim 3) (VOWEL :f2))) (- (formant_lim 3) (formant_lim 2))) 25)) )); 2600 2100 -> 3000 3000 (0~3000)
+  (let [SHIFT 0] ;move 25pixels with font 100, but cursor is also moved.
+    (if (= ind 1)
+    (int (+ (/ (* Scale-factor (- (VOWEL :f1)  (formant_lim 0)))  (- (formant_lim 1) (formant_lim 0))) SHIFT)) ;200 600 ->0 1000 (0~1000), 
+    (int (- (/ (* Scale-factor (- (formant_lim 3) (VOWEL :f2))) (- (formant_lim 3) (formant_lim 2))) SHIFT)) ))); 2600 2100 -> 3000 3000 (0~3000)
+ 
+ (defn parse-int [s]
+   "str2int"
+   (Integer. (re-find  #"\d+" s )))
  
  ;file functions
 (defn copy-file [source-path dest-path]
@@ -37,5 +41,21 @@
 (defn mkdir [path]
   (.mkdirs (io/file path)))
 
+(defn input-listener []
+  "for pause" 
+    (proxy [ActionListener KeyListener] []
+      (actionPerformed [e])
+      (keyPressed [e] (if (= (str (.getKeyChar e)) "p") 
+                        (doseq [] (println "Pause: " @running) (swap! running not)))) ;pause
+  (keyReleased [e])
+  (keyTyped [e])))
 
-  
+;(shuffle  (reduce into (map #(repeat 5 %) ["u" "o" "i" "a" "e"]))  )
+(defn matcher [CH]
+  "This function converts char to vowel structure"
+  (case CH
+    "a" struct_vowel/A
+    "e" struct_vowel/E
+    "i" struct_vowel/I
+    "o" struct_vowel/O
+    "u" struct_vowel/U))

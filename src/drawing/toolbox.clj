@@ -42,7 +42,7 @@
   (.mkdirs (io/file path)))
 
 (defn input-listener []
-  "for pause" 
+  "key-listener for pause, and future use of others" 
     (proxy [ActionListener KeyListener] []
       (actionPerformed [e])
       (keyPressed [e] (if (= (str (.getKeyChar e)) "p") 
@@ -50,12 +50,11 @@
   (keyReleased [e])
   (keyTyped [e])))
 
-;(shuffle  (reduce into (map #(repeat 5 %) ["u" "o" "i" "a" "e"]))  )
 (defn matcher [CH]
   "This function converts char to vowel structure"
   (case CH
-    "a" struct_vowel/A
-    "e" struct_vowel/E
+    "\u0251" struct_vowel/A
+    "\u025B" struct_vowel/E
     "i" struct_vowel/I
-    "o" struct_vowel/O
+    "\u0254" struct_vowel/O
     "u" struct_vowel/U))

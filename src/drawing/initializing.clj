@@ -1,7 +1,6 @@
 (ns drawing.initializing
   (:require [clojure.string :as string])
-  (:use [overtone.at-at :only (now)]
-        [drawing.experiment_options]
+  (:use [drawing.experiment_options]
         [drawing.toolbox]
         [drawing.struct_vowel]
         [drawing.basic_vars] ) 
@@ -11,15 +10,12 @@
 (OPTIONS)
 (while @options)
 
-;(def Condition (atom (str (if @CUR "C" "") (if @TGT "T" "") (if (not (or @CUR @TGT)) "none")))) ;Cur+Tgt options
 (def Condition (atom (if @POLAR_COORDINATES "Polar" "Cart"))) 
 ;(defonce DATE (get-date))
 ;(def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME DATE "\\" @Condition "\\")) ;In case we need date
 
 ;File & Directory info
 (def FILENAME (str "C:\\Code\\keewii1\\data\\" NAME "\\" @Condition "\\"))
-(def Temp_data "C:\\Code\\keewii1\\temp\\") 
-(def session_number (atom 0))
 
 ;Make directories
 (mkdir FILENAME)

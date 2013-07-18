@@ -1,13 +1,7 @@
 (ns drawing.core
-  (:require [clojure.data.json :as json]
-            [clojure.string :as string]
+  (:require [clojure.string :as string]
             [clojure.java.io :as io])
-  (:use [lamina.core] ;udp
-        [aleph.tcp] ;udp
-        [gloss.core]
-        [aleph.udp] ;udp
-        [overtone.at-at :only (now)]
-        [drawing.basic_vars] 
+  (:use [drawing.basic_vars] 
         [drawing.struct_vowel]
         [drawing.toolbox]
         [drawing.udp]
@@ -20,9 +14,8 @@
            (java.lang.Runtime)))
 
 (def #^{:private true} frame)
-(def ^{:private true} font (new Font "Georgia" Font/PLAIN 100))
 
-(defn render [^Graphics g]
+(defn vowel_map_render [^Graphics g]
   (let [WIDTH (.getWidth frame) ;1382 in my laptop
         HEIGHT (.getHeight frame) ;744 in my laptop
         img (BufferedImage. WIDTH HEIGHT BufferedImage/TYPE_INT_ARGB)
@@ -37,42 +30,30 @@
       (.setColor Color/WHITE) ;background
       (.fillRect 0 0 (.getWidth img)  (.getHeight img)))
     
-    (when  @CUR_TGT_sleep;(and @CUR @CUR_TGT_sleep) ;draw cursor only when CURSOR = true
-      (doseq []  
-        (if @POLAR_COORDINATES
+    (if @CUR_TGT_sleep
+      (doseq []  ;trial
+        (when @POLAR_COORDINATES
           (doto bg
             (.setColor Color/GREEN)
             (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y)));only for polar coordinate
         (doto bg
           (.setColor Color/BLUE) ;blue square
-          (.fillRect (int (- x 10) )  (int (- y 10) )  20 20)))) 
-    (if @CUR_TGT_sleep
-      (if true ;@TGT  
+          (.fillRect (int (- x 10) )  (int (- y 10) )  20 20))
         (doto bg
           (. setFont font)
           (.setColor Color/BLACK)
-          (.drawString CHAR x_pos y_pos))
-        (doto bg
-          (.setFont font)
-          (.setColor Color/BLACK)
-          (.drawString CHAR 
-             (int (/ (* WIDTH 1500) 3000))
-            (int (/ (* HEIGHT 500)  1000)))))
-      (doto bg
+          (.drawString CHAR x_pos y_pos)))
+      (doto bg ; interval / relax status
         (.setFont font)
         (.setColor Color/BLACK)
-        (.drawString "Relax" 
-          (int (/ (* WIDTH  (- 3000 1700)) 3000));1700 = actual position
-          (int (/ (* HEIGHT 500)  1000))))) 
+        (.drawString (R :name) 
+          (formant2pixel R WIDTH 2);1700 = actual position
+          (formant2pixel R HEIGHT 1)))) 
     (.drawImage g img 0 0 nil)
     (.dispose bg)))
 
-(def ^JPanel panel (doto (proxy [JPanel] []
-                           (paint [g] (render g)))
-                     (.setPreferredSize (Dimension. 
-                                         (first dim)
-                                         (last dim)))))
-
+(def ^JPanel panel (doto (proxy [JPanel] [] (paint [g] (vowel_map_render g)))
+                     (.setPreferredSize (Dimension. (first dim) (last dim)))));only when we restore down the window
 (def frame 
   (doto (JFrame.) 
     (.add panel) .pack .show (. setAlwaysOnTop true) 
@@ -86,7 +67,6 @@
     (send-off *agent* #'animation))
   (.repaint panel)
   (Thread/sleep animation-sleep-ms) nil)
-(send-off animator animation)
 
 ;receving thread
 (def udp-receiver (agent nil))
@@ -111,13 +91,10 @@
   (udp-receive)
   (send-off *agent* #'udp-reception)
   nil)
-(send-off udp-receiver udp-reception)
 
+(send-off animator animation) ;printing thread
+(send-off udp-receiver udp-reception) ;receiving thread
 (. Thread (sleep 5000));Starting pause
-
-(def trial-duration 6000) ; in ms
-(def between-trial 5000) ;in ms
-(def total-trials 25)
 
 (seq_check (str FILENAME "seq.txt")) ;If exists, we will use pre-defined sequence
 

@@ -3,10 +3,7 @@
   :url "http://keewii.github.com"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.4.0"]
-                 [aleph "0.3.0-beta15"] ;udp
-                 [lamina "0.5.0-rc1"] ;udp
-                 [overtone "0.7.1"]]
+  :dependencies [[org.clojure/clojure "1.4.0"]]
   :compile-path "target/classes"
   :source-paths      ["src/" "src/keewii"]
   :java-source-paths ["src/java"]

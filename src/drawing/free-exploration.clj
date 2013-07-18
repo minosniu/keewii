@@ -1,12 +1,6 @@
 (ns drawing.free-exploration
-  (:require [clojure.data.json :as json]
-            [clojure.string :as string])
-  (:use [lamina.core] 
-        [aleph.tcp]
-        [gloss.core]
-        [aleph.udp]
-        [overtone.at-at :only (now)]
-        [drawing.basic_vars] 
+  (:require [clojure.string :as string])
+  (:use [drawing.basic_vars] 
         [drawing.toolbox]
         [drawing.struct_vowel]
         [drawing.experiment_options] 
@@ -19,46 +13,39 @@
 
 (Free_Ex_Op)
 (while @options)
-(println @POLAR_COORDINATES)
-
 (def #^{:private true} frame)
-(def ^{:private true} font (new Font "Georgia" Font/PLAIN 100))
 
-(defn render [^Graphics g]
+(defn vowel_map_render [^Graphics g]
   (let [WIDTH (.getWidth frame) ;1382 in my laptop
         HEIGHT (.getHeight frame) ;744 in my laptop
         img (BufferedImage. WIDTH HEIGHT BufferedImage/TYPE_INT_ARGB)
         bg (.getGraphics img)
         y (/ (* HEIGHT (- @F1 (formant_lim 0))) (- (formant_lim 1) (formant_lim 0))) ;cartesian coordinate
-        x (/ (* WIDTH (- (formant_lim 3) @F2)) (- (formant_lim 3) (formant_lim 2))) ;cartesian coordinate
-        ]
+        x (/ (* WIDTH (- (formant_lim 3) @F2)) (- (formant_lim 3) (formant_lim 2)))] ;cartesian coordinate
     (doto bg
       (.setColor Color/WHITE) ;background
       (.fillRect 0 0 (.getWidth img)  (.getHeight img)))  
     (if @POLAR_COORDINATES
-      (doto bg
+      (doto bg 
       (.setColor Color/GREEN)
-      (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y))) ;only for polar coordinate
+      (.drawLine (/ WIDTH 2) (/ HEIGHT 2) x y))) ;line only for polar coordinate
     (doto bg
-      (.setColor Color/BLUE) ;blue square
+      (.setColor Color/BLUE) ;blue square cursor
       (.fillRect (int (- x 10) )  (int (- y 10) )  20 20));
     (doto bg
-      (. setFont font)
+      (. setFont font) ;word
       (.setColor Color/BLACK)
-       (.drawString "a" (formant2pixel A WIDTH 2) (formant2pixel A HEIGHT 1));f2 f1 pair
-      (.drawString "e" (formant2pixel E WIDTH 2) (formant2pixel E HEIGHT 1))
-      (.drawString "i" (formant2pixel I WIDTH 2) (formant2pixel I HEIGHT 1))
-      (.drawString "o" (formant2pixel O WIDTH 2) (formant2pixel O HEIGHT 1))
-      (.drawString "u" (formant2pixel U WIDTH 2) (formant2pixel U HEIGHT 1)))
+      ;f2 f1 pair
+       (.drawString (A :name) (formant2pixel A WIDTH 2) (formant2pixel A HEIGHT 1)) ;a
+      (.drawString (E :name) (formant2pixel E WIDTH 2) (formant2pixel E HEIGHT 1)) ;e
+      (.drawString (I :name) (formant2pixel I WIDTH 2) (formant2pixel I HEIGHT 1))
+      (.drawString (O :name) (formant2pixel O WIDTH 2) (formant2pixel O HEIGHT 1)) ;o
+      (.drawString (U :name) (formant2pixel U WIDTH 2) (formant2pixel U HEIGHT 1)))
     (.drawImage g img 0 0 nil)
     (.dispose bg)))
 
-(def ^JPanel panel (doto (proxy [JPanel] []
-                           (paint [g] (render g)))
-                     (.setPreferredSize (Dimension. 
-                                         (first dim)
-                                         (last dim)))))
-
+(def ^JPanel panel (doto (proxy [JPanel] [] (paint [g] (vowel_map_render g)))
+                     (.setPreferredSize (Dimension. (first dim) (last dim)))));only when we restore down the window
 (def frame 
   (doto (JFrame.) 
     (.add panel) .pack .show (. setAlwaysOnTop true) (. toFront)
@@ -68,7 +55,7 @@
 ;printing thread
 (def animator (agent nil))
 (defn animation [x]
-  (when 1
+  (when true
     (send-off *agent* #'animation)
     (.repaint panel)
     (Thread/sleep animation-sleep-ms) nil))
@@ -96,11 +83,11 @@
 (send-off udp-receiver udp-reception)
 
 (. Thread (sleep 5000));Starting pause
-(def trial-duration 600000) ; in ms
+(def free-trial-duration 600000) ; in ms
 
 (dosync 
   (reset! TIME (now))
   (. (Runtime/getRuntime) exec "wish C:\\Code\\emg_speech_local\\speech_5vowels.tcl")
-  (. Thread (sleep trial-duration))
+  (. Thread (sleep free-trial-duration))
   (. (Runtime/getRuntime) exec "taskkill /F /IM  wish.exe"))
 (System/exit 0)

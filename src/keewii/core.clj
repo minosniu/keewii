@@ -1,27 +1,29 @@
+;2-control vowel, m,y,w in 1st tab
+; xy-plot in 4th tab
 (ns keewii.core
   (:use [overtone.live]
-        [keewii.formant]
-        [keewii.utils]
-        [keewii.server]
+        [keewii.toolbox]
         [keewii.sequence]
-        [keewii.touchosc])
-  (:gen-class))
-(defn -main [& args]
-  (zero-conf-on)
-  (dosync
-    (osc-handle server "/1/fader1" (fn [msg] (silent-alter-vowel-f1 vowel (first (:args msg)))))
-    (osc-handle server "/1/fader2" (fn [msg] (silent-alter-vowel-f2 vowel (first (:args msg))))))
-  (osc-handle server "/1/push7" (fn [msg] (enable-m (first (:args msg)))));m + vowel
-  (osc-handle server "/1/push8" (fn [msg] (enable-w (first (:args msg)))));w + vowel
-  (osc-handle server "/1/push9" (fn [msg] (enable-y (first (:args msg)))));y + vowel
-  (osc-handle server "/1/push4" (fn [msg] (enable-b (first (:args msg)))));b + vowel
-  (osc-handle server "/1/push5" (fn [msg] (enable-l (first (:args msg)))));l + vowel
-  (osc-handle server "/1/push6" (fn [msg] (enable-d (first (:args msg)))));d + vowel
-  (osc-handle server "/1/push12" (fn [msg] (stop)));stop
-  (osc-handle server "/4/xy" (fn [msg] (vowel-xy f1 f2 (seq (:args msg)))))
-  (osc-handle server "/4/toggle5" (fn [msg] (enable-play (first (:args msg)))))
-  ;(osc-listen server (fn [msg] (println msg)) :debug);listener connection
-  ;(osc-rm-listener server :debug) ; remove listener
-  ;(osc-close client)
-  ;(osc-close server) 
-  )
+        [keewii.basic_setting]))
+;Sliders for vowel (1st tab)
+(dosync
+ (osc-handle server "/1/fader1" (fn [msg] (silent-alter-vowel-f1 vowel (first (:args msg)))))
+ (osc-handle server "/1/fader2" (fn [msg] (silent-alter-vowel-f2 vowel (first (:args msg))))))
+
+;Buttons for consonant (1st tab)
+(doseq [i (range (.length Consonant-list))]
+  (let [CONSONANT (str2con_conv (Consonant-list i))
+        BUTTON (str "/1/push" (button_re-sort i))]
+    (osc-handle server BUTTON (fn [msg] (Enable-Consonant (first (:args msg)) CONSONANT)))))
+;stop button (1st tab)
+(osc-handle server "/1/push10" (fn [msg] (enable-vowel (first (:args msg)))));vowel only
+(osc-handle server "/1/push11" (fn [msg] (enable-play (first (:args msg)))));play
+(osc-handle server "/1/push12" (fn [msg] (stop)));stop
+
+;xy plot in 4th tab
+(osc-handle server "/4/xy" (fn [msg](println msg) (vowel-xy f1 f2 (seq (:args msg)))))
+(osc-handle server "/4/toggle5" (fn [msg](println msg) (enable-play (first (:args msg))))) ;play&stop toggle
+
+;(osc-close client)
+;(osc-close server) 
+;(stop)
